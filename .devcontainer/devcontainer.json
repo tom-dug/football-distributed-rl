@@ -1,0 +1,13 @@
+{
+    "name" : "gfootball-dev",
+    "image" : "gfootball-base:latest",
+    "workspaceFolder": "/app",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python"
+            ]
+        }
+    }
+}
