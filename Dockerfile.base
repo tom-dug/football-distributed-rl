@@ -4,10 +4,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends git cmake build
  libgl1-mesa-dev libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev libboost-all-dev\
  mesa-utils xvfb python3-pip python3-dev && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir "setuptools==65.5.0" "wheel==0.38.4" psutil
+RUN pip3 install --no-cache-dir psutil
+RUN pip3 install --no-cache-dir "setuptools==65.5.0" "wheel==0.38.4" && \
+    pip3 install --no-cache-dir --no-build-isolation "gym==0.21.0"
+RUN pip3 install --no-cache-dir grpcio grpcio-tools "numpy<2.0" six
 
 RUN pip3 install --no-cache-dir gfootball
 RUN pip3 install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip3 install --no-cache-dir grpcio grpcio-tools numpy six
 
 WORKDIR /app
