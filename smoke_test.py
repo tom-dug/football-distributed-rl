@@ -2,9 +2,13 @@ import gfootball.env as football_env
 
 env = football_env.create_environment(
     env_name="academy_empty_goal",
-    representation="simple115v2",
+    representation="pixels",
     rewards="scoring,checkpoints",
-    render=False
+    render=True,
+    write_full_episode_dumps=True,
+    write_video=True,
+    dump_frequency=1,
+    logdir='/app/videos'
 )
 
 obs = env.reset()
