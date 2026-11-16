@@ -15,16 +15,17 @@ class QNetwork(nn.Module):
         return self.stack(x)
     
 
-net = QNetwork()
-
-output1 = net.forward(randn((1, 115)))
-output2 = net.forward(randn((64, 115)))
 
 
 if __name__ == "__main__":
     """
     Testing implementation
     """
+    net = QNetwork()
+
+    output1 = net.forward(randn((1, 115)))
+    output2 = net.forward(randn((64, 115)))
+
 
     print(f"Output 1: {output1.shape}")
     print(f"Output 2: {output2.shape}")
