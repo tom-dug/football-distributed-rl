@@ -35,12 +35,13 @@ class DQNAgent():
         q_values = self.q_net(states).gather(1, actions)
         
         with no_grad():
-            next_q = self.q_net(next_states).max(dim=1, keepdim=True).values
+            next_q = self.target_net(next_states).max(dim=1, keepdim=True).values
         targets = rewards + self.gamma * (1.0 - dones) * next_q     # Bellman's equation
         loss = self.loss_fn(q_values, targets)
         
         self.optimizer.zero_grad()
         loss.backward()
+        nn.utils.clip_grad_norm_(self.q_net.parameters(), 10.0)
         self.optimizer.step()
         
         self.learn_steps += 1
