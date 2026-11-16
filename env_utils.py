@@ -5,8 +5,6 @@ env = football_env.create_environment(
     env_name="academy_empty_goal",
     representation="simple115v2",
     rewards="scoring,checkpoints",
-    render=False,
-    write_video=False,
     write_full_episode_dumps=True,
     logdir="/app/videos"
 )
