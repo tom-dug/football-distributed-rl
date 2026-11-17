@@ -1,5 +1,5 @@
 from model import QNetwork
-from torch import optim, nn, as_tensor, no_grad, gather, float32
+from torch import optim, nn, as_tensor, no_grad, float32
 import numpy as np
 import replay_buffer
 
@@ -35,7 +35,8 @@ class DQNAgent():
         q_values = self.q_net(states).gather(1, actions)
         
         with no_grad():
-            next_q = self.target_net(next_states).max(dim=1, keepdim=True).values
+            best_actions = self.q_net(next_states).argmax(dim=1, keepdim=True)
+            next_q = self.target_net(next_states).gather(dim=1, index=best_actions)
         targets = rewards + self.gamma * (1.0 - dones) * next_q     # Bellman's equation
         loss = self.loss_fn(q_values, targets)
         

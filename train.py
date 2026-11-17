@@ -5,12 +5,12 @@ import gfootball.env as football_env
 from collections import deque
 import torch
 
-capacity = 50000
+capacity = 80000
 batch_size = 64
-min_buffer_size = 1000
+min_buffer_size = 2500
 
-eps_start, eps_end, eps_decay_steps = 1.0, 0.05, 20000
-max_episodes = 1000
+eps_start, eps_end, eps_decay_steps = 1.0, 0.05, 30000
+max_episodes = 2500
 
 env = football_env.create_environment(
     env_name="academy_empty_goal",
@@ -34,6 +34,7 @@ buffer = replay_buffer.ReplayBuffer(capacity=capacity, state_dim=115)
 past_scores = deque(maxlen=50)
 past_ep_rewards = deque(maxlen=50)
 past_ep_len = deque(maxlen=50)
+past_losses = deque(maxlen=50)
 
 
 for i in range(max_episodes):
@@ -42,6 +43,7 @@ for i in range(max_episodes):
     done = False
     ep_reward = 0.0
     ep_len = 0
+    ep_loss = 0
     while not done:
         eps = get_epsilon(total_steps)
         action = DQNagent.select_action(state, eps)
@@ -51,6 +53,7 @@ for i in range(max_episodes):
         if len(buffer) >= min_buffer_size:
             sample = buffer.sample(batch_size)
             loss = DQNagent.update(sample)
+            ep_loss += loss
             
         state = next_state
         ep_len += 1
@@ -58,17 +61,20 @@ for i in range(max_episodes):
         ep_reward += reward
         
     past_scores.append(info["score_reward"])
-    past_ep_rewards.append(reward)
+    past_ep_rewards.append(ep_reward)
     past_ep_len.append(ep_len)
+    past_losses.append(ep_loss/ep_len)
     
     if i % 20 == 0:
         print(f""" ===== Episode {i} =====
-                - Total steps : {total_steps}
-                - Epsilon : {eps}
-                - Average score of last {min(i, 50)} episodes = {sum(past_scores) / len(past_scores)}
-                - Average reward of last {min(i, 50)} episodes = {sum(past_ep_rewards) / len(past_ep_rewards)}
-                - Average episode length of last {min(i, 50)} episodes = {sum(past_ep_len) / len(past_ep_len)}
-                """)
+        - Total steps : {total_steps}
+        - Epsilon : {eps}
+        - Average score of last {len(past_scores)} episodes = {sum(past_scores) / len(past_scores):.4f}
+        - Average reward of last {len(past_ep_rewards)} episodes = {sum(past_ep_rewards) / len(past_ep_rewards):.4f}
+        - Average episode length of last {len(past_ep_len)} episodes = {sum(past_ep_len) / len(past_ep_len):.4f}
+        - Average losses of last {len(past_losses)} episodes = {sum(past_losses) / len(past_losses):.4f}
+        """)
         
         if sum(past_scores) / len(past_scores) >= 0.8 and len(past_scores) == 50:
             torch.save(DQNagent.q_net.state_dict(), "dqn_empty_goal.pt")
+            break
