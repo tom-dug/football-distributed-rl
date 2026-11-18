@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package gfootball.rl;
+
+service LearnerService {
+    rpc PushTransition (TransitionBatch) returns (PushAck);
+    rpc GetWeights (WeightsRequest) returns (WeightsResponse);
+}
+
+message Transition {
+    repeated float state = 1;
+    int32 action = 2;
+    float reward = 3;
+    repeated float next_state = 4;
+    bool done = 5;
+}
+
+message TransitionBatch {
+    string workerid = 1;
+    int64 model_version = 2;
+    repeated Transition transition = 3;
+}
+
+message PushAck {
+    bool accepted = 1;
+    int64 current_model_version = 2;
+    int32 buffer_size = 3;
+}
+
+
+message WeightsRequest {
+    string worker_id = 1;
+    int64 current_version = 2;
+}
+
+message TensorData {
+    string name = 1;
+    repeated int32 shape = 2;
+    bytes data = 3;
+}
+
+message WeightsResponse {
+    bool updated = 1;
+    int64 model_version = 2;
+    repeated TensorData tensors = 3;
+}
