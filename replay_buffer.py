@@ -112,14 +112,11 @@ class ThreadSafeReplayBuffer(ReplayBuffer):
 
 
 if __name__ == "__main__":
-    """buffer = ReplayBuffer(5)
+    buffer = ReplayBuffer(5)
     for i in range(7):
         buffer.push(np.zeros(115), 0, 0.1*i, np.zeros(115), 0)
     print(len(buffer))
     print(buffer.rewards)
     
     samp = buffer.sample(3)
-    print(samp[0].shape, samp[1].shape, samp[2].shape, samp[3].shape, samp[4].shape)"""
-    t1 = Thread()
-    t2 = Thread()
-    
+    print(samp[0].shape, samp[1].shape, samp[2].shape, samp[3].shape, samp[4].shape)
