@@ -10,6 +10,8 @@ import grpc
 from concurrent import futures
 from collections import deque
 from weights_utils import state_dict_to_proto
+import torch
+from datetime import datetime
 
 
 class LearnerService(learner_pb2_grpc.LearnerServiceServicer):
@@ -113,6 +115,11 @@ def main():
     except KeyboardInterrupt:
         stop_event.set()
         thread.join(timeout=2)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        save_path = f"checkpoints/dqn_distributed_{timestamp}.pt"
+        torch.save(agent.q_net.state_dict(), save_path)
+        
         server.stop(grace=2)
 
 if __name__ == "__main__":
