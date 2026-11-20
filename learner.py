@@ -73,6 +73,7 @@ def training_loop(agent:DQNAgent,
     while not stop_event.is_set() and len(buffer) < min_buffer_size:
         time.sleep(0.1)
     while not stop_event.is_set():
+        time.sleep(0.01)            # TODO: Temporary fix for learner being too fast
         batch = buffer.sample(batch_size)
         loss = agent.update(batch)
         past_losses.append(loss)
@@ -82,7 +83,7 @@ def training_loop(agent:DQNAgent,
             proto = state_dict_to_proto(agent.q_net.state_dict())
             servicer.update_weights(proto)
         
-        if step % 100 == 0:
+        if step % 500 == 0:
             with servicer.weights_lock:
                 version = servicer.version
             print(f"""
