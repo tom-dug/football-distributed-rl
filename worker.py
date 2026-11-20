@@ -6,8 +6,8 @@ from model import QNetwork
 import gfootball.env as football_env
 import numpy as np
 import torch
-import learner
 import weights_utils
+from collections import deque
 
 
 class RLWorker:
@@ -59,10 +59,76 @@ class RLWorker:
         else:
             return False
         
+    def push_transitions(self):
+        if len(self.local_batch) == 0:
+            return None
+        else:
+            batch = learner_pb2.TransitionBatch(workerid = self.worker_id,
+                                        model_version = self.local_version,
+                                        transition=self.local_batch)
+            ack = self.stub.PushTransitions(batch)
+            self.local_batch.clear()
+            return ack
+        
+    def run(self, max_episodes:int | None = None):
+        self.pull_weights()
+        total_steps = 0
+        episode = 0
+        last_buffer_size = 0
+        past_scores = deque(maxlen=50)
+        past_rewards = deque(maxlen=50)
+        while max_episodes is None or episode < max_episodes:
+            state = self.env.reset()
+            done = False
+            ep_reward = 0
+            while not done:
+                action = self.select_action(state)
+                next_state, reward, done, info = self.env.step(action)
+                transition = learner_pb2.Transition(state=state.tolist(),
+                                                    action=int(action),
+                                                    reward=float(reward),
+                                                    next_state=next_state.tolist(),
+                                                    done=bool(done))
+                self.local_batch.append(transition)
+                
+                if len(self.local_batch) >= self.batch_push_size:
+                    ack = self.push_transitions()
+                    if ack is not None:
+                        last_buffer_size = ack.buffer_size
+                
+                if total_steps % self.sync_freq == 0 and total_steps > 0:
+                    self.pull_weights()
+                
+                state = next_state
+                ep_reward += reward
+                total_steps += 1
+            
+            episode += 1
+            past_scores.append(info["score_reward"])
+            past_rewards.append(ep_reward)
+            
+            if episode % 50 == 0:
+                print(f"""
+        ***** Worker {self.worker_id} *****
+        - Episode: {episode}
+        - Total steps: {total_steps}
+        - Local version: {self.local_version}
+        - Last buffer size: {last_buffer_size}
+        - Average score in past 50 games: {sum(1 for s in past_scores if s > 0) / len(past_scores):.4f}
+        - Average reward in past 50 games: {sum(past_rewards) / len(past_rewards):.4f)}
+        """)
+        self.push_transitions()
+    
+    def close(self):
+        self.env.close()
+        self.channel.close()
+
+    
+        
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Starts a new worker")
-    parser.add_argument("--worker-id", type=str)
+    parser.add_argument("--worker-id", type=str, required=True)
     parser.add_argument("--target", type=str, default="localhost:50051")
     parser.add_argument("--epsilon", type=float, default=0.2)
     return parser.parse_args()
@@ -72,7 +138,11 @@ def main():
     args = parse_args()
     worker = RLWorker(args.worker_id, args.target, args.epsilon)
     try:
-        stub.
+        worker.run()
+    except KeyboardInterrupt:
+        print(f"Arrêt du worker {worker.worker_id} en cours...")
+    finally:
+        worker.close()
 
 
 if __name__ == "__main__":

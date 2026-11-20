@@ -3,7 +3,7 @@ syntax = "proto3";
 package gfootball.rl;
 
 service LearnerService {
-    rpc PushTransition (TransitionBatch) returns (PushAck);
+    rpc PushTransitions (TransitionBatch) returns (PushAck);
     rpc GetWeights (WeightsRequest) returns (WeightsResponse);
 }
 

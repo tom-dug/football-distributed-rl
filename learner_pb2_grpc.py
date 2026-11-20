@@ -34,8 +34,8 @@ class LearnerServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.PushTransition = channel.unary_unary(
-                '/gfootball.rl.LearnerService/PushTransition',
+        self.PushTransitions = channel.unary_unary(
+                '/gfootball.rl.LearnerService/PushTransitions',
                 request_serializer=learner__pb2.TransitionBatch.SerializeToString,
                 response_deserializer=learner__pb2.PushAck.FromString,
                 _registered_method=True)
@@ -49,7 +49,7 @@ class LearnerServiceStub:
 class LearnerServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
-    def PushTransition(self, request, context):
+    def PushTransitions(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -64,8 +64,8 @@ class LearnerServiceServicer:
 
 def add_LearnerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'PushTransition': grpc.unary_unary_rpc_method_handler(
-                    servicer.PushTransition,
+            'PushTransitions': grpc.unary_unary_rpc_method_handler(
+                    servicer.PushTransitions,
                     request_deserializer=learner__pb2.TransitionBatch.FromString,
                     response_serializer=learner__pb2.PushAck.SerializeToString,
             ),
@@ -86,7 +86,7 @@ class LearnerService:
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def PushTransition(request,
+    def PushTransitions(request,
             target,
             options=(),
             channel_credentials=None,
@@ -99,7 +99,7 @@ class LearnerService:
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/gfootball.rl.LearnerService/PushTransition',
+            '/gfootball.rl.LearnerService/PushTransitions',
             learner__pb2.TransitionBatch.SerializeToString,
             learner__pb2.PushAck.FromString,
             options,

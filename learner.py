@@ -9,7 +9,7 @@ import time
 import grpc
 from concurrent import futures
 from collections import deque
-from weights_utils import state_dict_to_proto, proto_to_state_dict
+from weights_utils import state_dict_to_proto
 
 
 class LearnerService(learner_pb2_grpc.LearnerServiceServicer):
@@ -25,7 +25,7 @@ class LearnerService(learner_pb2_grpc.LearnerServiceServicer):
             self.cached_weights = new_weights
             self.version += 1
     
-    def PushTransition(self, request, context):
+    def PushTransitions(self, request, context):
         if len(request.transition) > 0:
             transition = request.transition
             states_, actions_, rewards_, next_states_, dones_ = [], [], [], [], []
@@ -46,7 +46,7 @@ class LearnerService(learner_pb2_grpc.LearnerServiceServicer):
             size = len(self.buffer)
             return learner_pb2.PushAck(accepted=True, current_model_version=version, buffer_size=size)
         else:
-            return learner_pb2.PushAck(accepted=False)
+            return learner_pb2.PushAck(accepted=False, buffer_size=size)
             
     def GetWeights(self, request, context):
         with self.weights_lock:
@@ -81,12 +81,14 @@ def training_loop(agent:DQNAgent,
             servicer.update_weights(proto)
         
         if step % 100 == 0:
+            with servicer.weights_lock:
+                version = servicer.version
             print(f"""
-                  ===== Step {step} =====
-                - Model version: {servicer.version}
+                ===== Step {step} =====
+                - Model version: {version}
                 - Buffer length: {len(buffer)}
                 - Loss: {sum(past_losses) / len(past_losses):.4f}
-                  """)
+                """)
 
 def main():
     buffer = ThreadSafeReplayBuffer(100000)
