@@ -115,7 +115,7 @@ class RLWorker:
         - Local version: {self.local_version}
         - Last buffer size: {last_buffer_size}
         - Average score in past 50 games: {sum(1 for s in past_scores if s > 0) / len(past_scores):.4f}
-        - Average reward in past 50 games: {sum(past_rewards) / len(past_rewards):.4f)}
+        - Average reward in past 50 games: {sum(past_rewards) / len(past_rewards):.4f}
         """)
         self.push_transitions()
     

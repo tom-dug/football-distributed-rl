@@ -46,7 +46,9 @@ class LearnerService(learner_pb2_grpc.LearnerServiceServicer):
             size = len(self.buffer)
             return learner_pb2.PushAck(accepted=True, current_model_version=version, buffer_size=size)
         else:
-            return learner_pb2.PushAck(accepted=False, buffer_size=size)
+            with self.weights_lock:
+                version = self.version
+            return learner_pb2.PushAck(accepted=False, current_model_version=version, buffer_size=len(self.buffer))
             
     def GetWeights(self, request, context):
         with self.weights_lock:
