@@ -8,7 +8,12 @@ import numpy as np
 import torch
 import weights_utils
 from collections import deque
+import os
 
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1" 
+
+torch.set_num_threads(1)
 
 class RLWorker:
     def __init__(self,
@@ -131,6 +136,9 @@ def parse_args():
     parser.add_argument("--worker-id", type=str, required=True)
     parser.add_argument("--target", type=str, default="localhost:50051")
     parser.add_argument("--epsilon", type=float, default=0.2)
+    parser.add_argument("--env", type=str, default="academy_empty_goal")
+    parser.add_argument("--batch-push-size", type=int, default=64)
+    parser.add_argument("-sync-freq", type=int, default=100)
     return parser.parse_args()
 
 
@@ -138,6 +146,7 @@ def main():
     args = parse_args()
     worker = RLWorker(args.worker_id, args.target, args.epsilon)
     try:
+        print(torch.get_num_threads())
         worker.run()
     except KeyboardInterrupt:
         print(f"Arrêt du worker {worker.worker_id} en cours...")
