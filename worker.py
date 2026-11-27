@@ -1,3 +1,7 @@
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1" 
+
 import argparse
 import grpc
 import learner_pb2_grpc
@@ -8,10 +12,7 @@ import numpy as np
 import torch
 import weights_utils
 from collections import deque
-import os
 
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1" 
 
 torch.set_num_threads(1)
 
@@ -20,9 +21,9 @@ class RLWorker:
                  worker_id:str,
                  target:str = "localhost:50051",
                  epsilon:float = 0.2,
-                 env_name: str = "academy_empty_goal",
-                 batch_push_size: int = 64,
-                 sync_freq: int = 100):
+                 env_name:str = "academy_empty_goal",
+                 batch_push_size:int = 64,
+                 sync_freq:int = 100):
         self.worker_id = worker_id
         self.target = target
         self.epsilon = epsilon
@@ -37,7 +38,7 @@ class RLWorker:
             representation="simple115v2",
             rewards="scoring,checkpoints",
             write_full_episode_dumps=False
-        )
+        )        
         self.action_dim = self.env.action_space.n
         
         self.channel = grpc.insecure_channel(target)
@@ -128,25 +129,53 @@ class RLWorker:
         self.env.close()
         self.channel.close()
 
+
+def compute_worker_epsilon(worker_index : int,
+                            num_workers: int,
+                            epsilon: float = 0.4,
+                            alpha: float = 4):
+    if num_workers < 1 or not(worker_index >= 0 and worker_index < num_workers):
+        return epsilon
+    
+    return epsilon ** (1 + worker_index * alpha / (num_workers - 1))
     
         
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Starts a new worker")
     parser.add_argument("--worker-id", type=str, required=True)
+    parser.add_argument("--worker-index", type=int, default=None)
+    parser.add_argument("--num-worker", type=int, default=None)
     parser.add_argument("--target", type=str, default="localhost:50051")
-    parser.add_argument("--epsilon", type=float, default=0.2)
+    parser.add_argument("--epsilon", type=float, default=None)
     parser.add_argument("--env", type=str, default="academy_empty_goal")
     parser.add_argument("--batch-push-size", type=int, default=64)
-    parser.add_argument("-sync-freq", type=int, default=100)
+    parser.add_argument("--sync-freq", type=int, default=100)
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-    worker = RLWorker(args.worker_id, args.target, args.epsilon)
+    if args.worker_index and args.num_worker:
+        if args.epsilon:
+            epsilon = compute_worker_epsilon(args.worker_index, args.num_worker, args.epsilon)
+        else:
+            epsilon = compute_worker_epsilon(args.worker_index, args.num_worker)
+    else:
+        if args.worker_index or args.num_worker:
+            raise ValueError("Both worker_index and num_worker need to be given")
+        elif args.epsilon:
+            epsilon = args.epsilon        
+        else:
+            epsilon = 0.4    
+        
+    worker = RLWorker(worker_id=args.worker_id,
+                      target=args.target,
+                      epsilon=epsilon,
+                      env_name=args.env,
+                      batch_push_size=args.batch_push_size,
+                      sync_freq=args.sync_freq)
     try:
-        print(torch.get_num_threads())
         worker.run()
     except KeyboardInterrupt:
         print(f"Arrêt du worker {worker.worker_id} en cours...")
